@@ -16,6 +16,9 @@ engines/**/build
 **/.gradle
 **/out/
 **/.cargo
+**/__pycache__/
+**/.deps
+*.pyc
 **/perf.data*
 **/flamegraph.svg
 wiki-articles.json.bz2

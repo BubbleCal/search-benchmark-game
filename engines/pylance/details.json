@@ -1,0 +1,7 @@
+[
+  "Python SDK for Lance (pylance 1.0.1).",
+  "Uses Lance INVERTED index for full-text search with BM25 ranking.",
+  "Tokenizer: base_tokenizer=simple, lower_case=true, stem=false, remove_stop_words=false, ascii_folding=false.",
+  "Phrase queries enabled via positions; '+' terms are treated as OR because Lance full_text_query only supports simple match queries.",
+  "Results are streamed from Lance scanners."
+]
