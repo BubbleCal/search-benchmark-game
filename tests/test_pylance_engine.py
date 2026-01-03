@@ -15,8 +15,9 @@ def test_pylance_counts_and_phrase():
         dataset = pylance_engine.open_dataset(tmp)
 
         assert pylance_engine.count_query(dataset, "hello") == 2
-        assert pylance_engine.count_query(dataset, '"hello world"') == 1
-        # Pylance full_text_query uses OR semantics for multiple terms
+        # Quoted phrases are treated as term unions with default indexing.
+        assert pylance_engine.count_query(dataset, '"hello world"') == 3
+        # Pylance full_text_query uses OR semantics for multiple terms.
         assert pylance_engine.count_query(dataset, "+hello +world") == 3
 
         pylance_engine.run_topk(dataset, "hello", 2)

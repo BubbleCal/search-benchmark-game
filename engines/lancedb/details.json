@@ -1,7 +1,7 @@
 [
   "LanceDB Python client (lancedb 0.26.1) backed by Lance datasets.",
   "Full-text search via LanceDB FTS (lance-index) with BM25 ranking.",
-  "Tokenizer: base_tokenizer=simple, lower_case=true, stem=false, remove_stop_words=false, ascii_folding=false, with_position=true.",
-  "Lucene-style '+' and phrases are translated into boolean and phrase queries using LanceDB FullTextQuery objects.",
+  "Tokenizer uses LanceDB defaults.",
+  "Lucene-style '+' is mapped to boolean MUST/MUST_NOT; quoted phrases are treated as term AND queries (defaults do not store positions).",
   "Counts are streamed from the internal query executor to avoid loading all results into memory."
 ]

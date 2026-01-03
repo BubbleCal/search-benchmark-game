@@ -57,12 +57,6 @@ def build_index(docs: Iterable, idx_path: str, chunk_size: int = 10000) -> None:
         "text",
         "INVERTED",
         replace=True,
-        with_position=True,
-        base_tokenizer="simple",
-        lower_case=True,
-        stem=False,
-        remove_stop_words=False,
-        ascii_folding=False,
     )
 
 
@@ -74,10 +68,7 @@ def sanitize_query(query: str) -> str:
         text = phrase if phrase is not None else term
         if not text:
             continue
-        if phrase is not None:
-            parts.append(f'"{text}"')
-        else:
-            parts.append(text)
+        parts.append(text)
     return " ".join(parts)
 
 

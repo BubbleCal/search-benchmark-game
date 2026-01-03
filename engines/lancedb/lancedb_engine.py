@@ -3,7 +3,7 @@ import re
 from typing import Iterable, Iterator, List, Optional, Tuple
 
 import lancedb
-from lancedb.query import BooleanQuery, FullTextOperator, MatchQuery, Occur, PhraseQuery
+from lancedb.query import BooleanQuery, FullTextOperator, MatchQuery, Occur
 
 TOKEN_RE = re.compile(r'(?P<prefix>[+-]?)(?:"(?P<phrase>[^"]+)"|(?P<term>\S+))')
 
@@ -57,12 +57,6 @@ def build_index(docs: Iterable, idx_path: str, chunk_size: int = 10000) -> None:
         "text",
         replace=True,
         use_tantivy=False,
-        with_position=True,
-        base_tokenizer="simple",
-        lower_case=True,
-        stem=False,
-        remove_stop_words=False,
-        ascii_folding=False,
     )
 
 
@@ -82,7 +76,7 @@ def build_fts_query(query: str, column: str = "text"):
             continue
 
         if phrase is not None:
-            q = PhraseQuery(text, column)
+            q = MatchQuery(text, column, operator=FullTextOperator.AND)
         else:
             q = MatchQuery(text, column, operator=FullTextOperator.OR)
 
