@@ -121,16 +121,15 @@ impl<R: BufRead> RecordBatchReader for JsonDocReader<R> {
 }
 
 pub fn sanitize_query(query: &str) -> String {
-    // let mut parts = Vec::new();
-    // for caps in TOKEN_RE.captures_iter(query) {
-    //     if let Some(text) = caps.name("phrase").or_else(|| caps.name("term")) {
-    //         if !text.as_str().is_empty() {
-    //             parts.push(text.as_str().to_string());
-    //         }
-    //     }
-    // }
-    // parts.join(" ")
-    query.to_string()
+    let mut parts = Vec::new();
+    for caps in TOKEN_RE.captures_iter(query) {
+        if let Some(text) = caps.name("phrase").or_else(|| caps.name("term")) {
+            if !text.as_str().is_empty() {
+                parts.push(text.as_str().to_string());
+            }
+        }
+    }
+    parts.join(" ")
 }
 
 pub async fn build_index<R: BufRead + Send + 'static>(
@@ -245,6 +244,39 @@ pub async fn topk_count_with_latency(
     count_query_with_latency(dataset, query).await
 }
 
+pub async fn analyze_topk_plan(
+    dataset: &Dataset,
+    query: &str,
+    k: usize,
+) -> lance::Result<Option<String>> {
+    let Some(fts_query) = build_query(query) else {
+        return Ok(None);
+    };
+    let mut scanner = dataset.scan();
+    scanner.empty_project()?;
+    scanner.full_text_search(fts_query)?;
+    scanner.disable_scoring_autoprojection();
+    scanner.limit(Some(k as i64), None)?;
+    let plan = scanner.analyze_plan().await?;
+    Ok(Some(plan))
+}
+
+pub async fn analyze_count_plan(
+    dataset: &Dataset,
+    query: &str,
+) -> lance::Result<Option<String>> {
+    let Some(fts_query) = build_query(query) else {
+        return Ok(None);
+    };
+    let mut scanner = dataset.scan();
+    scanner.empty_project()?;
+    scanner.full_text_search(fts_query)?;
+    scanner.disable_scoring_autoprojection();
+    scanner.limit(None, None)?;
+    let plan = scanner.analyze_plan().await?;
+    Ok(Some(plan))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,5 +308,11 @@ mod tests {
 
         let duration = run_topk_with_latency(&dataset, "hello", 2).await.unwrap();
         assert!(duration < 1_000_000);
+
+        let plan = analyze_topk_plan(&dataset, "hello", 2)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!plan.trim().is_empty());
     }
 }

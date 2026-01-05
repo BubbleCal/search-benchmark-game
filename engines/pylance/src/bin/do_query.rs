@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufWriter, Write};
 
 use pylance_engine::{
-    count_query_with_latency, open_dataset, run_topk_with_latency, topk_count_with_latency,
-    LatencyStats,
+    analyze_count_plan, analyze_topk_plan, count_query_with_latency, open_dataset,
+    run_topk_with_latency, topk_count_with_latency, LatencyStats,
 };
 
 #[derive(Debug)]
@@ -92,12 +92,59 @@ impl LatencyLog {
     }
 }
 
+struct PlanLog {
+    writer: BufWriter<File>,
+    seen: HashSet<String>,
+    active: bool,
+}
+
+impl PlanLog {
+    fn from_env() -> io::Result<Option<Self>> {
+        let Ok(path) = env::var("PYLANCE_ANALYZE_PLAN_LOG") else {
+            return Ok(None);
+        };
+        if path.trim().is_empty() {
+            return Ok(None);
+        }
+        let file = File::create(path)?;
+        Ok(Some(Self {
+            writer: BufWriter::new(file),
+            seen: HashSet::new(),
+            active: false,
+        }))
+    }
+
+    fn activate(&mut self) {
+        self.active = true;
+    }
+
+    fn should_log(&mut self, command: &str, query: &str) -> bool {
+        if !self.active {
+            return false;
+        }
+        let key = format!("{command}\t{query}");
+        self.seen.insert(key)
+    }
+
+    fn write_plan(&mut self, command: &str, query: &str, plan: &str) -> io::Result<()> {
+        writeln!(self.writer, "=== {command}\\t{query} ===")?;
+        writeln!(self.writer, "{plan}")?;
+        writeln!(self.writer, "---")?;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> io::Result<()> {
+        self.writer.flush()
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let idx_path = args.next().unwrap_or_else(|| "idx".to_string());
     let dataset = open_dataset(&idx_path).await?;
     let mut latency_log = LatencyLog::from_env()?;
+    let mut plan_log = PlanLog::from_env()?;
 
     let stdin = io::stdin();
     let mut stdout = io::stdout();
@@ -116,35 +163,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(logger) = latency_log.as_mut() {
                 logger.activate();
             }
+            if let Some(logger) = plan_log.as_mut() {
+                logger.activate();
+            }
             writeln!(stdout, "OK")?;
             stdout.flush()?;
             continue;
         }
 
-        match parse_command(command) {
-            Some(Command::Count) => {
+        let command_kind = match parse_command(command) {
+            Some(kind) => kind,
+            None => {
+                writeln!(stdout, "UNSUPPORTED")?;
+                stdout.flush()?;
+                continue;
+            }
+        };
+
+        if let Some(logger) = plan_log.as_mut() {
+            if logger.should_log(command, query) {
+                let plan = match command_kind {
+                    Command::Count => analyze_count_plan(&dataset, query).await?,
+                    Command::TopK(k) => analyze_topk_plan(&dataset, query, k).await?,
+                    Command::TopKCount(_) => analyze_count_plan(&dataset, query).await?,
+                };
+                match plan {
+                    Some(plan) => logger.write_plan(command, query, &plan)?,
+                    None => logger.write_plan(command, query, "EMPTY_QUERY")?,
+                }
+            }
+        }
+
+        match command_kind {
+            Command::Count => {
                 let (result, duration_us) = count_query_with_latency(&dataset, query).await?;
                 writeln!(stdout, "{result}")?;
                 if let Some(logger) = latency_log.as_mut() {
                     logger.record(command, duration_us);
                 }
             }
-            Some(Command::TopK(k)) => {
+            Command::TopK(k) => {
                 let duration_us = run_topk_with_latency(&dataset, query, k).await?;
                 writeln!(stdout, "1")?;
                 if let Some(logger) = latency_log.as_mut() {
                     logger.record(command, duration_us);
                 }
             }
-            Some(Command::TopKCount(k)) => {
+            Command::TopKCount(k) => {
                 let (result, duration_us) = topk_count_with_latency(&dataset, query, k).await?;
                 writeln!(stdout, "{result}")?;
                 if let Some(logger) = latency_log.as_mut() {
                     logger.record(command, duration_us);
                 }
-            }
-            None => {
-                writeln!(stdout, "UNSUPPORTED")?;
             }
         }
         stdout.flush()?;
@@ -154,6 +224,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(logger) = latency_log.as_mut() {
+        logger.finish()?;
+    }
+    if let Some(logger) = plan_log.as_mut() {
         logger.finish()?;
     }
 
