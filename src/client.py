@@ -44,6 +44,40 @@ def drive(queries, client, command):
         duration = int((stop - start) * 1e6)
         yield (query, count, duration)
 
+
+def run_warmup(
+    queries,
+    client,
+    command,
+    warmup_time=None,
+    now_fn=None,
+    drive_fn=None,
+    progress_fn=None,
+):
+    if warmup_time is None:
+        warmup_time = WARMUP_TIME
+    if now_fn is None:
+        now_fn = time.monotonic
+    if drive_fn is None:
+        drive_fn = drive
+    if progress_fn is None:
+        progress_fn = printProgressBar
+    warmup_start = now_fn()
+    progress_fn(0, prefix='Warmup:', suffix='Complete', length=50)
+    rounds = 0
+    while True:
+        for _ in drive_fn(queries, client, command):
+            pass
+        rounds += 1
+        if warmup_time <= 0:
+            progress = 1.0
+        else:
+            progress = min(1.0, (now_fn() - warmup_start) / warmup_time)
+        progress_fn(progress, prefix='Warmup:', suffix='Complete', length=50)
+        if progress >= 1.0:
+            break
+    return rounds
+
 class Query(object):
     def __init__(self, query, tags):
         self.query = query
@@ -118,15 +152,7 @@ if __name__ == "__main__":
             queries_shuffled = list(queries[:])
             random.seed(2)
             random.shuffle(queries_shuffled)
-            warmup_start = time.monotonic()
-            printProgressBar(0, prefix = 'Warmup:', suffix = 'Complete', length = 50)
-            while True:
-                for _ in drive(queries_shuffled, search_client, command):
-                    pass
-                progress = min(1, (time.monotonic() - warmup_start) / WARMUP_TIME)
-                printProgressBar(progress, prefix = 'Warmup:', suffix = 'Complete', length = 50)
-                if progress == 1:
-                    break
+            run_warmup(queries_shuffled, search_client, command)
             printProgressBar(0, prefix = 'Run:   ', suffix = 'Complete', length = 50)
             for i in range(NUM_ITER):
                 for (query, count, duration) in drive(queries_shuffled, search_client, command):
