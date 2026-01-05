@@ -1,7 +1,7 @@
 [
-  "LanceDB Python client (lancedb 0.26.1) backed by Lance datasets.",
+  "LanceDB Rust SDK (lancedb 0.23.1) backed by Lance datasets.",
   "Full-text search via LanceDB FTS (lance-index) with BM25 ranking.",
   "Tokenizer uses LanceDB defaults.",
   "Lucene-style '+' is mapped to boolean MUST/MUST_NOT; quoted phrases are treated as term AND queries (defaults do not store positions).",
-  "Counts are streamed from the internal query executor to avoid loading all results into memory."
+  "Counts are streamed from the query result batches to avoid loading all results into memory."
 ]

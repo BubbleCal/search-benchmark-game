@@ -1,27 +1,19 @@
-VENV_DIR := $(abspath ../../.venv)
-PYTHON := $(VENV_DIR)/bin/python
-PIP := $(PYTHON) -m pip
-REQS := $(abspath ../../requirements.txt)
-DEPS_STAMP := .deps
-
 clean:
-	@rm -rf idx
+	rm -fr idx
+	rm -fr target
 
-compile: deps
+compile: target/release/build_index target/release/do_query
 
-index: compile
-	@echo "--- Indexing lancedb ---"
-	@$(PYTHON) index.py idx < $(CORPUS)
+index: idx
 
-serve: compile
-	@$(PYTHON) serve.py idx
+serve: target/release/do_query
+	@target/release/do_query idx
 
-deps: $(DEPS_STAMP)
+target/release/%:
+	@echo "\n\n\n--- Building lancedb (Rust) ---"
+	@cargo build --release --bin $(notdir $@)
 
-$(DEPS_STAMP): $(REQS) $(PYTHON)
-	@$(PIP) install -r $(REQS) 1>&2
-	@touch $(DEPS_STAMP)
-
-$(PYTHON):
-	@python3 -m venv $(VENV_DIR)
-	@$(PIP) install --upgrade pip
+idx: target/release/build_index
+	@echo "\n\n\n---- Indexing lancedb (Rust) ----"
+	@mkdir -p idx
+	@target/release/build_index idx < $(CORPUS)

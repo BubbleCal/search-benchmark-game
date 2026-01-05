@@ -1,7 +1,7 @@
 [
-  "Python SDK for Lance (pylance 1.0.1).",
+  "Rust SDK for Lance (lance 1.0.1).",
   "Uses Lance INVERTED index for full-text search with BM25 ranking.",
   "Tokenizer uses Lance defaults.",
-  "Quoted phrases are treated as term unions (defaults do not store positions); '+' terms are treated as OR because Lance full_text_query only supports simple match queries.",
+  "Quoted phrases are treated as term unions; '+' terms are treated as OR after sanitization (default index has no positions).",
   "Results are streamed from Lance scanners."
 ]
