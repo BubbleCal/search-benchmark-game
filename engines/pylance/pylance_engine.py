@@ -88,7 +88,8 @@ def _scanner(dataset: lance.LanceDataset, query: str, limit: Optional[int]) -> l
 
 
 def count_query(dataset: lance.LanceDataset, query: str) -> int:
-    sanitized = sanitize_query(query)
+    # sanitized = sanitize_query(query)
+    sanitized = query
     scanner = _scanner(dataset, sanitized, None)
     count = 0
     for batch in scanner.to_batches():
@@ -97,14 +98,16 @@ def count_query(dataset: lance.LanceDataset, query: str) -> int:
 
 
 def run_topk(dataset: lance.LanceDataset, query: str, k: int) -> None:
-    sanitized = sanitize_query(query)
+    # sanitized = sanitize_query(query)
+    sanitized = query
     scanner = _scanner(dataset, sanitized, k)
     for _ in scanner.to_batches():
         pass
 
 
 def topk_count(dataset: lance.LanceDataset, query: str, k: int) -> int:
-    sanitized = sanitize_query(query)
+    # sanitized = sanitize_query(query)
+    sanitized = query
     scanner = _scanner(dataset, sanitized, None)
     count = 0
     seen = 0

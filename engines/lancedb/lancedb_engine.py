@@ -97,7 +97,7 @@ def build_fts_query(query: str, column: str = "text"):
 
 def _query_builder(table, query: str, limit: Optional[int]):
     fts_query = build_fts_query(query)
-    qb = table.search(fts_query, query_type="fts")
+    qb = table.search(fts_query, query_type="fts").select([])
     return qb.limit(limit)
 
 
