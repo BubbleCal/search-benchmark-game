@@ -22,6 +22,15 @@ class SearchClient:
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE)
 
+    def start_latency_log(self):
+        if self.engine != "pylance":
+            return
+        if not os.environ.get("PYLANCE_LATENCY_LOG"):
+            return
+        self.process.stdin.write(b"PYLANCE_LOG_START\t\n")
+        self.process.stdin.flush()
+        self.process.stdout.readline()
+
     def query(self, query, command):
         query_line = "%s\t%s\n" % (command, query)
         self.process.stdin.write(query_line.encode("utf-8"))
@@ -153,6 +162,7 @@ if __name__ == "__main__":
             random.seed(2)
             random.shuffle(queries_shuffled)
             run_warmup(queries_shuffled, search_client, command)
+            search_client.start_latency_log()
             printProgressBar(0, prefix = 'Run:   ', suffix = 'Complete', length = 50)
             for i in range(NUM_ITER):
                 for (query, count, duration) in drive(queries_shuffled, search_client, command):

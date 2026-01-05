@@ -1,6 +1,6 @@
 import os
 
-os.environ.setdefault("COMMANDS", "COUNT")
+os.environ.setdefault("COMMANDS", "TOP_100")
 
 import src.client as client
 
@@ -30,7 +30,7 @@ def test_run_warmup_runs_once_when_time_non_positive():
     rounds = client.run_warmup(
         ["q1", "q2"],
         None,
-        "COUNT",
+        "TOP_100",
         warmup_time=0,
         now_fn=now_fn,
         drive_fn=drive_fn,
@@ -62,7 +62,7 @@ def test_run_warmup_runs_until_time_elapsed():
     rounds = client.run_warmup(
         ["q1"],
         None,
-        "COUNT",
+        "TOP_100",
         warmup_time=10,
         now_fn=now_fn,
         drive_fn=drive_fn,

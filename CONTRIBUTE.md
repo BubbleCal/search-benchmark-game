@@ -27,9 +27,7 @@ The tests consist in a command followed by a query.
 The command describes the type of operation that should
 be performed. Right now there are three commands
 
-- `COUNT` Outputs the document count.
 - `TOP_10`, `TOP_100` and `TOP_1000` compute the top-K elements and output "1"
-- `TOP_10_COUNT`, `TOP_100_COUNT` and `TOP_1000_COUNT` compute the top-K documents and the overall count of matching documents, and output the document count.
 
 Scores for these commands should be as close as possible to lucene's BM25.
 If BM25  is not available, fall back to TfIdf. If TfIdf is not available,

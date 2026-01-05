@@ -38,9 +38,9 @@ For each of these query, we then run them as :
 - `phrase queries`
 
 with the following collection options :
-- `COUNT` only count documents, no need to score them
 - `TOP 10` : Identify the 10 documents with the best BM25 score.
-- `TOP 10 + COUNT`: Identify the 10  documents with the best BM25 score, and count the matching documents.
+- `TOP 100` : Identify the 100 documents with the best BM25 score.
+- `TOP 1000` : Identify the 1000 documents with the best BM25 score.
 
 We also reintroduced artificially a couple of term queries with different term frequencies.
 
